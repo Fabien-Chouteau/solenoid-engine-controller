@@ -10,9 +10,9 @@ package body Coil_Pulse is
    for IO_Pin'Size use Word'Size;
 
    for IO_Pin use
-     (Dir_1_A  => 4,  -- PE4
-      Dir_1_B  => 5,  -- PE5
-      Enable_1 => 6); -- PE6
+     (Dir_1_A  => 2**4,  -- PE4
+      Dir_1_B  => 2**5,  -- PE5
+      Enable_1 => 2**6); -- PE6
 
    function As_Word is new Ada.Unchecked_Conversion
      (Source => IO_Pin, Target => Word);
