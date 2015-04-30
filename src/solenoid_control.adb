@@ -20,7 +20,6 @@ package body Solenoid_Control is
           Ada.Interrupts.Names.EXTI0_Interrupt);
 
       Last_Trig : Ada.Real_Time.Time := Ada.Real_Time.Time_First;
-      Trig : Ada.Real_Time.Time := Ada.Real_Time.Time_First;
       RPM : Natural;
 
       Coil_Control : Coil_Pulse_Controller;
@@ -34,16 +33,17 @@ package body Solenoid_Control is
       procedure Interrupt_Handler is
          Start, Stop : Time;
          Elapsed, TDC_To_BDC, Ignition, Power_Phase : Float;
+         Now : Ada.Real_Time.Time := Ada.Real_Time.Time_First;
       begin
-         Trig := Clock;
+         Now := Clock;
 
          --  Time since last interrupt
-         Elapsed := Float (To_Duration (Trig - Last_Trig));
+         Elapsed := Float (To_Duration (Now - Last_Trig));
 
          --  Current engine speed
          RPM := Natural (60.0 / Elapsed);
 
-         Last_Trig := Trig;
+         Last_Trig := Now;
 
          --  We choose not to try to power the engine if it's current speed is
          --  less than 60 RPM. Below this speed, the rotation of the engine is
@@ -64,7 +64,7 @@ package body Solenoid_Control is
             Power_Phase := TDC_To_BDC * 0.5;
 
             --  Convert to start and stop time
-            Start := Trig + Milliseconds (Natural (1000.0 * Ignition));
+            Start := Now + Milliseconds (Natural (1000.0 * Ignition));
             Stop := Start + Milliseconds (Natural (1000.0 * Power_Phase));
 
             --  Send the pulse command
