@@ -35,15 +35,17 @@ package body Solenoid_Control is
          Elapsed, TDC_To_BDC, Ignition, Power_Phase : Float;
          Now : Ada.Real_Time.Time := Ada.Real_Time.Time_First;
       begin
+         --  What time is it?
          Now := Clock;
 
          --  Time since last interrupt
          Elapsed := Float (To_Duration (Now - Last_Trig));
 
-         --  Current engine speed
-         RPM := Natural (60.0 / Elapsed);
-
+         --  Store trigger time for the next interrupt
          Last_Trig := Now;
+
+         --  Compute number of revolutions per minute
+         RPM := Natural (60.0 / Elapsed);
 
          --  We choose not to try to power the engine if it's current speed is
          --  less than 60 RPM. Below this speed, the rotation of the engine is
@@ -57,15 +59,15 @@ package body Solenoid_Control is
             --  it took to make the last complete rotation.
             TDC_To_BDC := Elapsed / 2.0;
 
-            --  We start energizing at 20% of the TDC to BDC time
-            Ignition    :=  TDC_To_BDC * 0.2;
+            --  We start energizing at 25% of the TDC to BDC time
+            Ignition    :=  TDC_To_BDC * 0.25;
 
             --  We energize the coil during 50% of the TDC to BDC time
             Power_Phase := TDC_To_BDC * 0.5;
 
             --  Convert to start and stop time
-            Start := Now + Milliseconds (Natural (1000.0 * Ignition));
-            Stop := Start + Milliseconds (Natural (1000.0 * Power_Phase));
+            Start := Now   + Milliseconds (Natural (1000.0 * Ignition));
+            Stop  := Start + Milliseconds (Natural (1000.0 * Power_Phase));
 
             --  Send the pulse command
             Coil_Control.Pulse (Start, Stop);
