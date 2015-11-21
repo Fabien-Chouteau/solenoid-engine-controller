@@ -2,24 +2,48 @@ project Solenoid_Engine is
 
    for Languages use ("Ada");
    for Main use ("solenoid_engine.adb");
-   for Source_Dirs use ("src");
+   for Source_Dirs use (
+                        "drivers/ARM/STMicro/STM32/examples/common",
+                        "drivers/ARM/STMicro/STM32/drivers",
+                        "drivers/ARM/STMicro/STM32/boards",
+                        "drivers/ARM/STMicro/STM32/devices",
+                        "drivers/ARM/STMicro/STM32/components",
+                        "drivers/ARM/STMicro/STM32/utils",
+                        "src");
    for Object_Dir use "obj";
    for Exec_Dir Use ".";
-   --  for Target use "arm-eabi";
-   --  for Runtime ("ada") use "ravenscar-sfp-stm32f4";
+   for Target use "arm-eabi";
+   for Runtime ("ada") use "ravenscar-sfp-stm32f4";
 
    --  Export run-times's variables
    type Loaders is ("ROM", "RAM");
    Loader : Loaders := external ("LOADER", "ROM");
+   type Build_Type is ("Debug", "Release");
+   Build : Build_Type := external ("Build", "Debug");
+
+   Build_Switches := ("-gnat12", "-gnatwa", "-gnatwe",
+                      "-gnatw.X"); --  "-gnatyg", "-gnaty-d",
+   case Build is
+      when "Debug" =>
+         Build_Switches := Build_Switches & ("-g", "-O0");
+      when "Release" =>
+         Build_Switches := Build_Switches & ("-O3");
+   end case;
 
    package Compiler is
-      for Default_Switches ("ada") use ("-gnatwa", "-gnatQ", "-gnatw.X");
+      for Default_Switches ("ada") use Build_Switches;
    end Compiler;
 
-   package Builder is
+    package Linker is
       for Default_Switches ("ada") use
-        ("--RTS=<PATH_TO_GNAT_INSTALL>/lib/gnat/arm-eabi/ravenscar-sfp-stm32f4/");
-   end Builder;
+        ("-Wl,-Map,train.map",
+         "-Wl,--gc-sections");
+    end Linker;
+
+   package Naming is
+      for Spec ("last_chance_handler") use "last_chance_handler-sfp.ads";
+      for Body ("last_chance_handler") use "last_chance_handler-stm32f429xx-sfp.adb";
+   end Naming;
 
    package Ide is
       for Gnat use "arm-eabi-gnat";

@@ -9,7 +9,7 @@ package body LED_Pulse is
    overriding procedure Start (Self : in out LED_Pulse_Controller)
    is
    begin
-      On (Self.My_LED);
+      Turn_On (Self.My_LED);
    end Start;
 
    ----------
@@ -19,7 +19,7 @@ package body LED_Pulse is
    overriding procedure Stop (Self : in out LED_Pulse_Controller)
    is
    begin
-      Off (Self.My_LED);
+      Turn_Off (Self.My_LED);
    end Stop;
 
    -------------
@@ -37,7 +37,7 @@ package body LED_Pulse is
          Pulse (Green_Ctrl, Now + Seconds (1), Now + Seconds (2));
          Pulse (Red_Ctrl, Now + Seconds (1), Now + Seconds (3));
 
-         delay until Now + seconds (3);
+         delay until Now + Seconds (3);
       end loop;
    end Example;
 

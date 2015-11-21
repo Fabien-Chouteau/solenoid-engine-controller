@@ -1,13 +1,17 @@
 with Ada.Interrupts.Names;
 with Ada.Real_Time; use Ada.Real_Time;
-with Registers;     use Registers;
 with STM32F4;       use STM32F4;
 with STM32F4.GPIO;  use STM32F4.GPIO;
 with Coil_Pulse; use Coil_Pulse;
-with LEDs;
 with LED_Pulse;
+with STM32F429_Discovery;
+use STM32F429_Discovery;
+with STM32F4.SYSCFG; use STM32F4.SYSCFG;
 
 package body Solenoid_Control is
+
+   Sensor_Port : GPIO_Port renames STM32F429_Discovery.GPIO_A;
+   Sensor_Pin  : constant GPIO_Pin  := Pin_0;
 
    protected Sensor is
       pragma Interrupt_Priority;
@@ -23,7 +27,7 @@ package body Solenoid_Control is
       RPM : Natural;
 
       Coil_Control : Coil_Pulse_Controller;
-      LED_Control  : LED_Pulse.LED_Pulse_Controller (LEDs.Red);
+      LED_Control  : LED_Pulse.LED_Pulse_Controller (Red);
    end Sensor;
 
    protected body Sensor is
@@ -35,6 +39,8 @@ package body Solenoid_Control is
          Elapsed, TDC_To_BDC, Ignition, Power_Phase : Float;
          Now : Ada.Real_Time.Time := Ada.Real_Time.Time_First;
       begin
+         Clear_External_Interrupt (Sensor_Pin);
+
          --  What time is it?
          Now := Clock;
 
@@ -76,33 +82,30 @@ package body Solenoid_Control is
             --  energized.
             LED_Control.Pulse (Start, Stop);
          end if;
-
-         --  Clear interrupt
-         EXTI.PR (0) := 1;
       end Interrupt_Handler;
    end Sensor;
 
    function Get_RPM return Natural is (Sensor.Get_RPM);
 
    procedure Initialize is
-      RCC_AHB1ENR_GPIOA : constant Word := 16#01#;
+      Config : GPIO_Port_Configuration;
    begin
+      STM32F429_Discovery.Initialize_LEDs;
       Coil_Pulse.Initialize;
 
       --  Enable clock for GPIO-A
-      RCC.AHB1ENR := RCC.AHB1ENR or RCC_AHB1ENR_GPIOA;
+      STM32F429_Discovery.Enable_Clock (Sensor_Port);
 
       --  Configure PA0
-      GPIOA.MODER (0) := Mode_IN;
-      GPIOA.PUPDR (0) := No_Pull;
 
-      --  Select PA for EXTI0
-      SYSCFG.EXTICR1 (0) := 0;
+      Config.Mode := Mode_In;
+      Config.Speed := Speed_100MHz;
+      Config.Resistors := Floating;
 
-      --  Interrupt on rising edge
-      EXTI.FTSR (0) := 0;
-      EXTI.RTSR (0) := 1;
-      EXTI.IMR (0) := 1;
+      Configure_IO (Sensor_Port, Sensor_Pin, Config);
+
+      Connect_External_Interrupt (Sensor_Port, Sensor_Pin);
+      Configure_Trigger (Sensor_Port, Sensor_Pin, Interrupt_Rising_Edge);
    end Initialize;
 
 end Solenoid_Control;

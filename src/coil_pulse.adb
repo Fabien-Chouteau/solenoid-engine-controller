@@ -1,21 +1,22 @@
-with Registers;     use Registers;
 with STM32F4;       use STM32F4;
 with STM32F4.GPIO;  use STM32F4.GPIO;
-with Ada.Unchecked_Conversion;
+with STM32F429_Discovery;
 
 package body Coil_Pulse is
+
+   H_Bridge_Port : GPIO_Port renames STM32F429_Discovery.GPIO_E;
 
    --  H-bridge controls are wired to PE4, PE5 and PE6
    type IO_Pin is (Dir_1_A, Dir_1_B, Enable_1);
    for IO_Pin'Size use Word'Size;
 
-   for IO_Pin use
-     (Dir_1_A  => 2**4,  -- PE4
-      Dir_1_B  => 2**5,  -- PE5
-      Enable_1 => 2**6); -- PE6
+   To_IO_Pin : constant array (IO_Pin) of GPIO_Pin :=
+     (Dir_1_A  => Pin_4,  -- PE4
+      Dir_1_B  => Pin_5,  -- PE5
+      Enable_1 => Pin_6); -- PE6
 
-   function As_Word is new Ada.Unchecked_Conversion
-     (Source => IO_Pin, Target => Word);
+   procedure On (This : IO_Pin);
+   procedure Off (This : IO_Pin);
 
    --------
    -- On --
@@ -23,7 +24,7 @@ package body Coil_Pulse is
 
    procedure On (This : IO_Pin) is
    begin
-      GPIOE.BSRR := As_Word (This);
+      Set (H_Bridge_Port, To_IO_Pin (This));
    end On;
 
    ---------
@@ -32,7 +33,7 @@ package body Coil_Pulse is
 
    procedure Off (This : IO_Pin) is
    begin
-      GPIOE.BSRR := Shift_Left (As_Word (This), 16);
+      Clear (H_Bridge_Port, To_IO_Pin (This));
    end Off;
 
    ----------------
@@ -40,15 +41,21 @@ package body Coil_Pulse is
    ----------------
 
    procedure  Initialize is
-      RCC_AHB1ENR_GPIOE : constant Word := 2**4;
+      Config : GPIO_Port_Configuration;
    begin
-      --  Enable clock for GPIO-E
-      RCC.AHB1ENR := RCC.AHB1ENR or RCC_AHB1ENR_GPIOE;
 
-      --  Configure PE4, PE5 and PE6
-      GPIOE.MODER (4 .. 6) := (Mode_OUT, Mode_OUT, Mode_OUT);
-      GPIOE.OTYPER (4 .. 6) := (others => Type_PP);
-      GPIOE.PUPDR (4 .. 6) := (others => Pull_Down);
+      STM32F429_Discovery.Enable_Clock (H_Bridge_Port);
+
+      Config.Mode := Mode_Out;
+      Config.Speed := Speed_100MHz;
+      Config.Resistors := Pull_Down;
+      Config.Output_Type := Push_Pull;
+
+      Configure_IO (H_Bridge_Port,
+                    (To_IO_Pin (Dir_1_A),
+                     To_IO_Pin (Dir_1_B),
+                     To_IO_Pin (Enable_1)),
+                    Config);
 
       --  Set the H-bridge in one direction
       On (Dir_1_B);

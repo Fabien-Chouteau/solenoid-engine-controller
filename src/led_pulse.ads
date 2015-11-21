@@ -1,5 +1,5 @@
 with Pulse_Control; use Pulse_Control;
-with LEDs; use LEDs;
+with STM32F429_Discovery; use STM32F429_Discovery;
 
 --  This package provides an example of pulse controller
 
