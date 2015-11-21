@@ -1,3 +1,5 @@
+with "Giza/Giza";
+
 project Solenoid_Engine is
 
    for Languages use ("Ada");
@@ -9,11 +11,11 @@ project Solenoid_Engine is
                         "drivers/ARM/STMicro/STM32/devices",
                         "drivers/ARM/STMicro/STM32/components",
                         "drivers/ARM/STMicro/STM32/utils",
-                        "src");
+                        "src/**");
    for Object_Dir use "obj";
    for Exec_Dir Use ".";
    for Target use "arm-eabi";
-   for Runtime ("ada") use "ravenscar-sfp-stm32f4";
+   for Runtime ("ada") use "ravenscar-full-stm32f4";
 
    --  Export run-times's variables
    type Loaders is ("ROM", "RAM");
@@ -41,8 +43,8 @@ project Solenoid_Engine is
     end Linker;
 
    package Naming is
-      for Spec ("last_chance_handler") use "last_chance_handler-sfp.ads";
-      for Body ("last_chance_handler") use "last_chance_handler-stm32f429xx-sfp.adb";
+      for Spec ("last_chance_handler") use "last_chance_handler-full.ads";
+      for Body ("last_chance_handler") use "last_chance_handler-stm32f429xx-full.adb";
    end Naming;
 
    package Ide is
